@@ -1,0 +1,113 @@
+{
+  "browser": "default",
+  "parser": "markdown",
+  "pygments_inject_css": true,
+  "pygments_style": "github_dynamic",
+  "theme": "auto",
+  "enable_mathjax": true,
+  "pygments_css_class": "highlight",
+  "markdown_extensions": [
+    "markdown.extensions.footnotes",
+    "markdown.extensions.attr_list",
+    "markdown.extensions.def_list",
+    "markdown.extensions.tables",
+    "markdown.extensions.abbr",
+    "markdown.extensions.md_in_html",
+    "pymdownx.betterem",
+    {
+      "markdown.extensions.toc": {
+        "permalink": "\ue806"
+      }
+    },
+    "markdown.extensions.meta",
+    "markdown.extensions.sane_lists",
+    "markdown.extensions.smarty",
+    "markdown.extensions.wikilinks",
+    "markdown.extensions.admonition",
+    "pymdownx.details",
+    {
+      "pymdownx.arithmatex": {
+        "generic": true
+      }
+    },
+    {
+      "pymdownx.superfences": {
+        "custom_fences": [
+          {
+            "name": "flow",
+            "class": "uml-flowchart",
+            "format": {"!!python/name": "pymdownx.superfences.fence_code_format"}
+          },
+          {
+            "name": "sequence",
+            "class": "uml-sequence-diagram",
+            "format": {"!!python/name": "pymdownx.superfences.fence_code_format"}
+          },
+          {
+            "name": "mermaid",
+            "class": "mermaid",
+            "format": {"!!python/name": "pymdownx.superfences.fence_code_format"}
+          }
+        ]
+      }
+    },
+    {
+      "pymdownx.magiclink": {
+        "repo_url_shortener": true,
+        "repo_url_shorthand": true
+      }
+    },
+    "pymdownx.tasklist",
+    {
+      "pymdownx.tilde": {
+        "subscript": false
+      }
+    },
+    {
+      "pymdownx.emoji": {
+        "emoji_index": {"!!python/name": "pymdownx.emoji.gemoji"},
+        "emoji_generator": {"!!python/name": "pymdownx.emoji.to_png"},
+        "alt": "short",
+        "options": {
+          "attributes": {
+            "align": "absmiddle",
+            "height": "20px",
+            "width": "20px"
+          },
+          "image_path": "https://github.githubassets.com/images/icons/emoji/unicode/",
+          "non_standard_image_path": "https://github.githubassets.com/images/icons/emoji/"
+        }
+      }
+    }
+  ],
+  "enabled_parsers": ["markdown", "github", "gitlab"],
+  "markdown_binary_map": {},
+  "github_mode": "markdown",
+  "gitlab_mode": "gfm",
+  "github_inject_header_ids": false,
+  "github_oauth_token": "",
+  "gitlab_personal_token": "",
+  "css": {
+    "markdown": ["default"],
+    "github": ["default"],
+    "gitlab": ["default"]
+  },
+  "allow_css_overrides": true,
+  "html_template": "",
+  "js": {
+    "markdown": ["default"],
+    "github": ["default"],
+    "gitlab": ["default"]
+  },
+  "gitlab_highlight_theme": "white",
+  "enable_autoreload": true,
+  "live_reload_interval_ms": 1500,
+  "preserve_scroll": true,
+  "path_tempfile": "",
+  "html_simple": false,
+  "image_path_conversion": "absolute",
+  "file_path_conversions": "absolute",
+  "strip_critic_marks": "none",
+  "strip_yaml_front_matter": false,
+  "include_head": ["browser", "editor", "clipboard", "save"]
+}

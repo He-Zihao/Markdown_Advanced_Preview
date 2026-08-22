@@ -1,0 +1,55 @@
+[info]
+title=Markdown Advanced Preview
+desc=Full-featured Markdown preview and HTML export
+type=cudatext-plugin
+subdir=cuda_markdown_advanced_preview
+api=1.0.471
+
+[item1]
+section=commands
+caption=Markdown Advanced Preview\Preview
+method=run
+lexers=Markdown
+
+[item2]
+section=commands
+caption=Markdown Advanced Preview\Preview - select parser...
+method=run_select
+lexers=Markdown
+
+[item3]
+section=commands
+caption=Markdown Advanced Preview\Export HTML to CudaText tab...
+method=export_editor
+lexers=Markdown
+
+[item4]
+section=commands
+caption=Markdown Advanced Preview\Save as HTML...
+method=save_html
+lexers=Markdown
+
+[item5]
+section=commands
+caption=Markdown Advanced Preview\Copy HTML to clipboard...
+method=copy_html
+lexers=Markdown
+
+[item6]
+section=commands
+caption=Markdown Advanced Preview\Open Markdown cheatsheet
+method=cheatsheet
+
+[item7]
+section=commands
+caption=Markdown Advanced Preview\Settings...
+method=config
+
+[item8]
+section=commands
+caption=Markdown Advanced Preview\Toggle automatic reload
+method=config_live
+
+[item10]
+section=events
+events=on_change_slow,on_save,on_close,on_exit
