@@ -50,24 +50,26 @@ PYGMENTS_LOCAL = {
 }
 
 DEFAULT_CSS = {
-    "markdown": ["res://MarkdownAdvancedPreview/css/markdown.css"],
-    "github": ["res://MarkdownAdvancedPreview/css/github.css"],
+    "markdown": ["css/markdown.css"],
+    "github": ["css/github.css"],
     "gitlab": [
-        "res://MarkdownAdvancedPreview/css/gitlab.css",
+        "css/gitlab.css",
         "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css",
     ],
 }
 
+DEFAULT_MATHJAX_JS = [
+    "js/mathjax4_config.js",
+    "js/tex-mml-chtml.js",
+]
+
 DEFAULT_JS = {
-    "markdown": [
-        "res://MarkdownAdvancedPreview/js/mathjax4_config.js",
-        "https://cdn.jsdelivr.net/npm/mathjax@4.1.1/tex-mml-chtml.js",
-    ],
+    "markdown": DEFAULT_MATHJAX_JS,
     "github": [],
     "gitlab": [
         "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js",
         "https://unpkg.com/mermaid@8.0.0-rc.8/dist/mermaid.min.js",
-        "res://MarkdownAdvancedPreview/js/gitlab_config.js",
+        "js/gitlab_config.js",
     ],
 }
 
@@ -571,13 +573,14 @@ class Renderer:
                 css_items.append(str(override))
         head = "\n".join(meta_tags)
         head += "\n" + _asset_tags(css_items, "css")
-        js_defaults = DEFAULT_JS
+        js_items = _expand_default_assets(settings.get("js", {}), compiler, DEFAULT_JS)
         if compiler == "markdown" and not settings.get("enable_mathjax", True):
-            js_defaults = dict(DEFAULT_JS)
-            js_defaults["markdown"] = []
-        head += "\n" + _asset_tags(
-            _expand_default_assets(settings.get("js", {}), compiler, js_defaults), "js"
-        )
+            # The packaged settings spell out the default paths so users can see
+            # exactly what is loaded.  Continue to let this switch remove those
+            # assets, as it did when the settings used the "default" sentinel.
+            default_mathjax = set(DEFAULT_MATHJAX_JS)
+            js_items = [item for item in js_items if item not in default_mathjax]
+        head += "\n" + _asset_tags(js_items, "js")
         if compiler == "markdown" and settings.get("pygments_inject_css", True):
             head += "\n" + self._highlight_css(settings)
         head += "\n<title>{}</title>".format(html.escape(str(title_value)))

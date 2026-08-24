@@ -6,9 +6,8 @@ Markdown Advanced Preview converts Markdown to a styled HTML document from
 inside CudaText. It can open a live browser preview, export HTML to a CudaText
 tab, save HTML to disk, or copy HTML to the clipboard.
 
-The offline renderer, styles, and Python dependencies are included. MathJax is
-enabled by default and loaded from a public CDN, so formula typesetting needs
-network access unless local assets are configured.
+The offline renderer, styles, Python dependencies, and default MathJax engine
+are included. Formula typesetting therefore works locally for normal use.
 
 ## Installation
 
@@ -42,7 +41,7 @@ Choose **Settings...** to edit `cuda_markdown_advanced_preview.json` in the
 CudaText settings directory. It is created from `settings_default.json` on
 first use.
 
-Unlike a Sublime Text `.sublime-settings` file, this file is strict JSON:
+This file is strict JSON:
 
 - comments are not allowed;
 - trailing commas are not allowed;
@@ -204,41 +203,70 @@ source match; sprite and SVG generators require different options.
 
 The default configuration loads:
 
-1. `res://MarkdownAdvancedPreview/js/mathjax4_config.js`;
-2. MathJax 4.1.1 `tex-mml-chtml.js` from jsDelivr.
+1. `js/mathjax4_config.js`;
+2. the bundled MathJax 4.1.3 `js/tex-mml-chtml.js`.
 
 It supports inline `$...$` and `\(...\)`, display `$$...$$` and `\[...\]`,
 and AMS-style numbering for environments such as `equation`, `align`, and
 `gather`. The bundled pre-load configuration sets `tex.tags` to `ams`.
 
-### MathJax 3 and 4
+### How `mathjax4_config.js` is configured
 
-MathJax 3 and 4 read `window.MathJax` while the engine starts, so the
-configuration script must appear before the engine URL. For example:
+MathJax 3 and 4 read the global `window.MathJax` object only while the engine
+starts. Consequently, `mathjax4_config.js` must be loaded before
+`tex-mml-chtml.js`, exactly as ordered in `settings_default.json`. The bundled
+file contains:
+
+```javascript
+window.MathJax = {
+  tex: {
+    tags: "ams"
+  },
+  options: {
+    enableMenu: true
+  }
+};
+```
+
+- `tex.tags: "ams"` enables automatic numbering for AMS environments such as
+  `equation`, `align`, and `gather`, and provides the numbering required by
+  `\label`, `\ref`, and `\eqref`. Use `"none"` to disable automatic numbering,
+  or `"all"` to number all displayed equations.
+- `options.enableMenu: true` enables MathJax's contextual menu. Change it to
+  `false` if the menu is not wanted.
+- `inlineMath` and `displayMath` are intentionally not repeated here. The
+  enabled `pymdownx.arithmatex` extension, configured with `generic: true`,
+  recognizes `$...$`, `$$...$$`, `\(...\)`, and `\[...\]` first and emits the
+  normalized delimiters that MathJax consumes. Define these options only when
+  deliberately overriding that pipeline.
+- `tex-mml-chtml.js` accepts TeX and MathML input and produces CommonHTML
+  (CHTML). This is why the default output behaves more like selectable HTML
+  text than the SVG component.
+
+To keep a custom configuration across plugin upgrades, copy the configuration
+to another file and put it immediately before the engine in the `js.markdown`
+list. For example:
 
 ```json
 {
   "js": {
     "markdown": [
-      "res://MarkdownAdvancedPreview/js/mathjax4_config.js",
-      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"
+      "C:/Users/name/my_mathjax4_config.js",
+      "js/tex-mml-chtml.js"
     ]
   }
 }
 ```
 
-The important numbering option is:
+CudaText paths may be absolute as above or relative to the plugin directory;
+do not use a `file:///` URL. See the official
+[MathJax loading documentation](https://docs.mathjax.org/en/latest/web/loading.html).
 
-```javascript
-window.MathJax = {
-  tex: { tags: "ams" },
-  options: { enableMenu: true }
-};
-```
+### Other MathJax versions
 
-Use a CHTML component such as `tex-mml-chtml.js` when selectable HTML-like
-formula output is preferred. SVG components have different selection and font
-caching behavior. See the official [MathJax loading documentation](https://docs.mathjax.org/en/latest/web/loading.html).
+The bundled configuration uses the MathJax 3/4 configuration API and can also
+precede a compatible MathJax 3 CHTML component. Check any custom component's
+packages and configuration API before replacing the bundled 4.1.3 engine.
 
 ### MathJax 2
 
@@ -258,9 +286,15 @@ engine first and that configuration second:
 
 ### Local MathJax and KaTeX
 
-For offline use, download MathJax and replace the CDN URL with an absolute
-local path. CudaText configuration uses `C:/path/to/file.js`, not Sublime's
-`file:///C:/path/to/file.js` form.
+The default Markdown parser already uses the bundled MathJax component and
+does not need to fetch its main engine from a CDN. MathJax's official 4.x npm
+filename is `tex-mml-chtml.js`; the distributed file is already minified, so
+there is no separate `tex-mml-chtml.min.js` in the package. Rare dynamically
+loaded font ranges, optional TeX packages, or accessibility data can still
+require additional MathJax packages or network access when used.
+
+For another local version, use a path relative to the plugin directory or an
+absolute path such as `C:/path/to/file.js`.
 
 There is no `enable_katex` setting for the offline `markdown` parser. KaTeX can
 be used through custom `css` and `js` lists, but it needs its stylesheet,
@@ -272,9 +306,11 @@ MathJax assets. Explicit custom assets in `js` are still your responsibility.
 
 ## CSS, JavaScript, and templates
 
-`default` expands to the built-in assets for the selected parser. Other items
-may be HTTPS URLs, absolute local paths, or packaged resources such as
-`res://MarkdownAdvancedPreview/css/markdown.css`.
+`settings_default.json` lists the built-in assets explicitly with paths such
+as `css/markdown.css` and `js/mathjax4_config.js`. Paths are relative to the
+plugin directory. HTTPS URLs, absolute local paths, and packaged `res://`
+resources are also supported. The legacy `default` value remains supported in
+user settings and expands to the same built-in list.
 
 ```json
 {
@@ -351,8 +387,9 @@ untrusted Markdown.
 ## Network and security notes
 
 - The offline `markdown` parser does not upload document text. The default
-  browser page requests MathJax from jsDelivr and may request emoji images
-  from GitHub.
+  page uses bundled MathJax, but may request emoji images from GitHub. Rare
+  MathJax font ranges, optional packages, or accessibility data can also make
+  network requests unless their supporting packages are installed locally.
 - The `github` and `gitlab` parsers upload the Markdown being converted to
   those services. Their API policies and limits apply.
 - Custom JavaScript, templates, external parser commands, and YAML setting

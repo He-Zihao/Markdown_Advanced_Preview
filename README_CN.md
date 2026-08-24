@@ -6,8 +6,8 @@ Markdown Advanced Preview 可以在 CudaText 内将 Markdown 转换为带样式�
 HTML 文档。它能够打开自动更新的浏览器预览、导出到 CudaText HTML 标签页、
 保存 HTML 文件，或者将 HTML 复制到剪贴板。
 
-离线解析器、样式和 Python 依赖均已包含在插件中。MathJax 默认启用并从公共
-CDN 加载，因此公式排版默认需要网络；也可以自行配置本地资源。
+离线解析器、样式、Python 依赖和默认 MathJax 引擎均已包含在插件中，常规
+公式排版可以直接使用本地资源。
 
 ## 安装
 
@@ -40,7 +40,7 @@ Addons Manager > Install from ZIP file**）安装发布包。如果菜单没有�
 `cuda_markdown_advanced_preview.json`。首次使用时，插件会根据
 `settings_default.json` 创建它。
 
-与 Sublime Text 的 `.sublime-settings` 文件不同，这里使用严格 JSON：
+这里使用严格 JSON：
 
 - 不允许注释；
 - 不允许尾随逗号；
@@ -188,42 +188,64 @@ print("第三行")
 
 默认配置依次加载：
 
-1. `res://MarkdownAdvancedPreview/js/mathjax4_config.js`；
-2. jsDelivr 上的 MathJax 4.1.1 `tex-mml-chtml.js`。
+1. `js/mathjax4_config.js`；
+2. 插件内置的 MathJax 4.1.3 `js/tex-mml-chtml.js`。
 
 支持行内 `$...$` 与 `\(...\)`、行间 `$$...$$` 与 `\[...\]`，并支持
 `equation`、`align`、`gather` 等环境的 AMS 风格编号。预加载配置会将
 `tex.tags` 设置为 `ams`。
 
-### MathJax 3 和 4
+### `mathjax4_config.js` 如何配置
 
-MathJax 3/4 会在引擎启动时读取 `window.MathJax`，因此配置脚本必须排在引擎
-URL 前面。例如：
+MathJax 3/4 只在引擎启动时读取全局 `window.MathJax` 对象。因此
+`mathjax4_config.js` 必须排在 `tex-mml-chtml.js` 前面加载；
+`settings_default.json` 已按此顺序配置。内置文件的实际内容是：
+
+```javascript
+window.MathJax = {
+  tex: {
+    tags: "ams"
+  },
+  options: {
+    enableMenu: true
+  }
+};
+```
+
+- `tex.tags: "ams"` 为 `equation`、`align`、`gather` 等 AMS 环境启用自动
+  编号，并为 `\label`、`\ref`、`\eqref` 提供所需的编号。改成 `"none"` 可
+  关闭自动编号，改成 `"all"` 可为所有行间公式编号。
+- `options.enableMenu: true` 启用 MathJax 公式上下文菜单；不需要菜单时可改成
+  `false`。
+- 配置没有重复声明 `inlineMath` 和 `displayMath`，这是有意为之。启用的
+  `pymdownx.arithmatex` 已以 `generic: true` 识别 `$...$`、`$$...$$`、
+  `\(...\)`、`\[...\]`，并先输出 MathJax 可处理的规范分隔符。只有确实要
+  覆盖这条处理链时才需要自行声明分隔符。
+- `tex-mml-chtml.js` 接收 TeX 和 MathML 输入并生成 CommonHTML（CHTML）。因此
+  默认输出比 SVG 组件更接近可选择的 HTML 文本。
+
+为了避免插件升级覆盖自定义内容，建议复制一份配置文件，并在 `js.markdown`
+列表中把它紧挨着放在引擎之前。例如：
 
 ```json
 {
   "js": {
     "markdown": [
-      "res://MarkdownAdvancedPreview/js/mathjax4_config.js",
-      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"
+      "C:/Users/name/my_mathjax4_config.js",
+      "js/tex-mml-chtml.js"
     ]
   }
 }
 ```
 
-公式编号最重要的配置是：
-
-```javascript
-window.MathJax = {
-  tex: { tags: "ams" },
-  options: { enableMenu: true }
-};
-```
-
-如果希望公式输出更接近可选择的 HTML 文本，建议使用
-`tex-mml-chtml.js` 这样的 CHTML 组件。SVG 组件的文字选择和字体缓存行为不同。
-详见 MathJax 官方的
+路径可以像上例一样使用绝对路径，也可以使用相对于插件目录的路径；不要使用
+`file:///` URL。详见 MathJax 官方的
 [加载说明](https://docs.mathjax.org/en/latest/web/loading.html)。
+
+### 其他 MathJax 版本
+
+内置配置使用 MathJax 3/4 配置 API，也可以放在兼容的 MathJax 3 CHTML 组件
+之前。替换内置 4.1.3 引擎时，应先核对自定义组件包含的包及其配置 API。
 
 ### MathJax 2
 
@@ -243,9 +265,13 @@ window.MathJax = {
 
 ### 本地 MathJax 与 KaTeX
 
-完全离线使用时，可以自行下载 MathJax，再把 CDN URL 替换为本地绝对路径。
-CudaText 配置使用 `C:/path/to/file.js`，不是 Sublime 使用的
-`file:///C:/path/to/file.js`。
+默认的 Markdown 解析器已经使用插件内置的 MathJax 组合组件，主引擎不再从
+CDN 下载。MathJax 4.x npm 包的官方文件名是 `tex-mml-chtml.js`；发布文件本身
+已经压缩，包内没有另一个 `tex-mml-chtml.min.js`。仅在使用少见的动态字体
+区段、可选 TeX 包或辅助功能数据时，才可能仍需额外的 MathJax 包或网络访问。
+
+如需换用其他本地版本，可使用相对于插件目录的路径，或
+`C:/path/to/file.js` 这样的绝对路径。
 
 离线 `markdown` 解析器没有 `enable_katex` 设置。可以通过自定义 `css` 和
 `js` 数组使用 KaTeX，但必须同时配置样式表、引擎，以及能够处理 Arithmatex
@@ -257,8 +283,10 @@ MathJax 资源；用户在 `js` 中明确加入的自定义资源仍由用户自
 
 ## CSS、JavaScript 与模板
 
-`default` 会展开为当前解析器的内置资源。其他项目可以是 HTTPS URL、本地绝对
-路径，或 `res://MarkdownAdvancedPreview/css/markdown.css` 这样的插件资源。
+`settings_default.json` 已用 `css/markdown.css`、`js/mathjax4_config.js` 等路径
+明确列出内置资源；相对路径以插件目录为基准。HTTPS URL、本地绝对路径和
+`res://` 插件资源也仍受支持。旧用户配置中的 `default` 继续兼容，并会展开为
+同一组内置资源。
 
 ```json
 {
@@ -328,8 +356,9 @@ Markdown 时，应先审查 Front Matter 再启用。
 
 ## 网络与安全说明
 
-- 离线 `markdown` 解析器不会上传文档文本；默认浏览器页面会从 jsDelivr 请求
-  MathJax，并可能从 GitHub 请求 Emoji 图片。
+- 离线 `markdown` 解析器不会上传文档文本；默认页面使用内置 MathJax，但仍
+  可能从 GitHub 请求 Emoji 图片。少见的 MathJax 字体区段、可选包或辅助功能
+  数据也可能发起网络请求，除非另行安装其本地支持包。
 - `github` 与 `gitlab` 解析器会把待转换的 Markdown 上传到对应服务，其 API
   政策和限制同样适用。
 - 自定义 JavaScript、模板、外部解析器命令和 YAML 设置覆盖均属于可信配置，

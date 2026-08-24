@@ -88,16 +88,26 @@
   "github_oauth_token": "",
   "gitlab_personal_token": "",
   "css": {
-    "markdown": ["default"],
-    "github": ["default"],
-    "gitlab": ["default"]
+    "markdown": ["css/markdown.css"],
+    "github": ["css/github.css"],
+    "gitlab": [
+      "css/gitlab.css",
+      "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css"
+    ]
   },
   "allow_css_overrides": true,
   "html_template": "",
   "js": {
-    "markdown": ["default"],
-    "github": ["default"],
-    "gitlab": ["default"]
+    "markdown": [
+      "js/mathjax4_config.js",
+      "js/tex-mml-chtml.js"
+    ],
+    "github": [],
+    "gitlab": [
+      "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js",
+      "https://unpkg.com/mermaid@8.0.0-rc.8/dist/mermaid.min.js",
+      "js/gitlab_config.js"
+    ]
   },
   "gitlab_highlight_theme": "white",
   "enable_autoreload": true,

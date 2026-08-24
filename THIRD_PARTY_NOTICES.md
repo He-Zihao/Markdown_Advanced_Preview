@@ -16,10 +16,12 @@ The project's MIT license does not replace their licenses.
 | GitLab styles and rendering configuration | `css/gitlab.css`, `js/gitlab_config.js` | MIT; the full GitLab B.V. notice is retained in each file |
 | Font Awesome font subset from MarkdownPreview | Embedded in `css/markdown.css` | SIL Open Font License 1.1; `vendor/LICENSE.Font-Awesome.txt` |
 | GitHub Octicons link-icon font | Embedded in `css/github.css` | MIT; `vendor/LICENSE.Octicons.txt` |
+| MathJax 4.1.3 | `js/tex-mml-chtml.js` | Apache License 2.0; `vendor/LICENSE.MathJax.txt` |
 
-The default configuration references, but does not redistribute, MathJax from
-jsDelivr, KaTeX and Mermaid from public CDNs, and emoji images from GitHub.
-Those projects and service providers apply their own licenses and terms.
+The default Markdown parser includes MathJax locally. The GitLab parser still
+references KaTeX and Mermaid from public CDNs, and emoji images may be loaded
+from GitHub. Those projects and service providers apply their own licenses and
+terms.
 
 When adding or upgrading a dependency or asset, preserve its upstream notices
 and update this file.
