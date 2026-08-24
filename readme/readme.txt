@@ -53,8 +53,8 @@ Important settings:
 * preserve_scroll: restore the browser scroll position after reload.
 * enable_mathjax: enable formula processing and default MathJax assets.
 * pygments_style: syntax highlighting style.
-* css and js: per-parser lists of "default", URLs, absolute local files, or
-  res://MarkdownAdvancedPreview/... resources.
+* css and js: per-parser lists of plugin-relative paths, "default", URLs,
+  absolute local files, or res://MarkdownAdvancedPreview/... resources.
 * allow_css_overrides: load a same-name .css file beside the Markdown file.
 * html_template: template with {{ HEAD }}, {{ BODY }}, and optionally
   {{ THEME }} placeholders.
@@ -69,11 +69,11 @@ Important settings:
 Math and custom assets
 ----------------------
 
-MathJax is enabled by default. The browser loads MathJax 4.1.1 from jsDelivr,
-so formula rendering requires network access. Inline $...$ and \(...\), and
-display $$...$$ and \[...\], are supported. Set enable_mathjax to false to
-disable it. For offline use, replace the default js list with a bundled
-configuration followed by an absolute path to your own MathJax engine.
+MathJax is enabled by default and its 4.1.3 combined component is bundled in
+the plugin. Inline $...$ and \(...\), and display $$...$$ and \[...\], are
+supported. Set enable_mathjax to false to disable it. Rare dynamic font
+ranges, optional TeX packages, or accessibility data may still need extra
+MathJax files or network access when used.
 
 Local CSS and JavaScript files are embedded in generated HTML. Remote URLs are
 requested by the browser. Custom templates, JavaScript, and external parser
@@ -103,9 +103,11 @@ output paths. Generated HTML may also contain raw HTML from the source.
 Privacy
 -------
 
-The offline markdown parser does not upload document text. The default browser
-page contacts jsDelivr for MathJax and may contact GitHub for emoji images.
-The github and gitlab parsers send the converted Markdown to those services.
+The offline markdown parser does not upload document text. The default page
+uses bundled MathJax but may contact GitHub for emoji images. Rare MathJax
+font ranges, optional packages, or accessibility data may also need network
+access unless installed locally. The github and gitlab parsers send the
+converted Markdown to those services.
 
 More information
 ----------------
