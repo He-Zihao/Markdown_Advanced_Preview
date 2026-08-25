@@ -43,19 +43,6 @@ first use. If the user settings file is deleted, the plugin recreates it from
 the packaged defaults on the next startup; opening **Settings...** or running a
 preview also ensures that it exists.
 
-### Linux and embedded-Python compatibility
-
-Some CudaText Linux builds can leave the cached standard-library
-`html.parser` module detached from its parent `html` package after importing
-Python-Markdown. PyMdown Extensions then fails with `AttributeError: module
-'html' has no attribute 'parser'`. The plugin adapter now repairs that module
-binding immediately after importing Python-Markdown. Bundled Python-Markdown,
-PyMdown Extensions, Pygments, and other third-party sources are left
-unchanged. This approach also remains compatible with older CudaText
-`zipimporter` loaders that provide `load_module()` but not `exec_module()`.
-Restart CudaText after upgrading so its embedded Python interpreter discards
-previously cached modules.
-
 This file is strict JSON:
 
 - comments are not allowed;
@@ -107,7 +94,7 @@ Advanced settings:
 | `gitlab_mode` | Select GitLab GFM behavior |
 | `github_inject_header_ids` | Copy GitHub-generated anchor IDs onto heading elements |
 | `github_oauth_token` | Optional GitHub API token; keep it only in user settings |
-| `gitlab_personal_token` | Optional GitLab API token; keep it only in user settings |
+| `gitlab_personal_token` | GitLab API token with `read_api` scope; required by the GitLab parser |
 | `gitlab_highlight_theme` | Theme class applied to GitLab highlighted code |
 | `html_simple` | Return simplified HTML and omit the document wrapper |
 
@@ -194,10 +181,13 @@ PyMdown version. Brace-style headers may also be less well understood by
 editor syntax highlighters and other Markdown processors.
 
 The defaults recognize `mermaid`, `flow`, and `sequence` custom fences and add
-corresponding HTML classes, but recognition does not render a diagram by
-itself. A compatible browser-side diagram engine and initialization script
-must be added through `js`. Mermaid versions differ in their initialization
-API, so no unpinned Mermaid configuration is enabled for the offline parser.
+corresponding HTML classes. The local `markdown` parser also loads bundled
+Mermaid 11.16.1 followed by `js/mermaid_config.js`, so a fenced `mermaid` block
+is rendered locally in the browser. The initialization script unwraps the
+`<code>` element emitted by PyMdown SuperFences before Mermaid parses the
+diagram. The `flow` and `sequence` names only retain compatibility classes;
+they need their own engines and are not Mermaid aliases. Use
+`samples/mermaid.md` to test a flowchart and a sequence diagram.
 
 ### Arithmatex
 
@@ -360,17 +350,24 @@ Use custom CSS when a third-party Pygments style must switch dynamically.
 ## Online and external parsers
 
 The `github` and `gitlab` parsers send the selected text or document text to
-the corresponding Markdown API. Optional access tokens belong only in the
-user settings file:
+the corresponding Markdown API. GitLab introduced required authentication for
+its Markdown API in GitLab 15.3, so an empty `gitlab_personal_token` produces
+HTTP 401. Create a GitLab personal access token with the minimal `read_api`
+scope, then put it only in the user settings file:
 
 ```json
 {
   "github_oauth_token": "",
-  "gitlab_personal_token": ""
+  "gitlab_personal_token": "glpat-your-token"
 }
 ```
 
-Do not put secrets in `settings_default.json` or a shared Markdown document.
+The plugin sends it in the `Private-Token` header to
+`https://gitlab.com/api/v4/markdown`. A 401 with a non-empty value normally
+means the token is invalid, expired, revoked, or lacks `read_api`. Do not put
+secrets in `settings_default.json` or a shared Markdown document. The bundled
+KaTeX and Mermaid files only enhance the HTML returned by the API; they do not
+replace the required GitLab authentication or perform the Markdown conversion.
 
 External parsers read Markdown from standard input and must write an HTML body
 fragment to standard output:
@@ -393,22 +390,33 @@ input extensions or filters.
 
 ## YAML front matter
 
-When `strip_yaml_front_matter` is true, a leading YAML block can set HTML
-metadata such as `title` and `author`, plus `basepath`, `references`,
-`destination`, or a nested `settings` object:
+Here YAML means a front-matter block placed directly at the very beginning of
+the Markdown file, between two `---` delimiter lines. It is not a separate
+configuration file. When `strip_yaml_front_matter` is `true`, the plugin reads
+that block, applies it, and removes it from the visible Markdown body.
+`false` (default) disables this plugin-level processing. The
+block can set HTML metadata such as `title` and `author`, plus `basepath`,
+`references`, `destination`, or a nested `settings` object:
 
 ```yaml
 ---
 title: Example
 author: Ada
+basepath: C:/docs/project
+references:
+  - shared-definitions.md
+destination: output/example.html
 settings:
   theme: dark
 ---
 ```
 
-This feature is disabled by default. Per-document settings can select local or
-remote assets and output paths, so review front matter before enabling it for
-untrusted Markdown.
+`basepath` is the base directory for relative paths, `references` appends other
+Markdown source files before conversion, `destination` supplies the Save HTML
+target, and `settings` overrides renderer settings for this document. Other
+keys become HTML metadata. This feature is disabled by default. Per-document
+settings can select local or remote assets and output paths, so review front
+matter before enabling it for untrusted Markdown.
 
 ## Network and security notes
 

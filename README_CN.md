@@ -41,17 +41,6 @@ Addons Manager > Install from ZIP file**）安装发布包。如果菜单没有�
 `settings_default.json` 创建它。如果用户配置被删除，插件会在下一次启动时
 根据内置默认值重新生成；打开 **Settings...** 或执行预览也会确保该文件存在。
 
-### Linux 与内嵌 Python 兼容性
-
-部分 Linux 版 CudaText 在导入 Python-Markdown 后，可能出现标准库
-`html.parser` 子模块仍在缓存中、但没有挂载到父包 `html` 的状态。随后
-PyMdown Extensions 会报错 `AttributeError: module 'html' has no attribute
-'parser'`。现在由插件适配层在导入 Python-Markdown 后修复父子模块绑定；内置
-Python-Markdown、PyMdown Extensions、Pygments 及其他第三方源码均保持不变。
-该做法也兼容仅提供 `load_module()`、没有 `exec_module()` 的旧 CudaText
-`zipimporter`。升级后请重启 CudaText，以清除内嵌 Python 解释器中的旧模块
-缓存。
-
 这里使用严格 JSON：
 
 - 不允许注释；
@@ -101,7 +90,7 @@ Python-Markdown、PyMdown Extensions、Pygments 及其他第三方源码均保�
 | `gitlab_mode` | 是否使用 GitLab GFM 行为 |
 | `github_inject_header_ids` | 将 GitHub 生成的锚点 ID 注入标题元素 |
 | `github_oauth_token` | 可选 GitHub API 令牌；只能放在用户配置中 |
-| `gitlab_personal_token` | 可选 GitLab API 令牌；只能放在用户配置中 |
+| `gitlab_personal_token` | 带 `read_api` scope 的 GitLab API 令牌；GitLab 解析器必需 |
 | `gitlab_highlight_theme` | GitLab 代码高亮块使用的主题类名 |
 | `html_simple` | 返回简化 HTML，并省略完整文档外壳 |
 
@@ -179,9 +168,11 @@ print("第三行")
 花括号头部也可能无法被编辑器语法高亮器或其他 Markdown 处理器正确识别。
 
 默认配置会识别 `mermaid`、`flow` 和 `sequence` 自定义围栏，并添加相应 HTML
-类名，但“识别”本身不会绘制图表。还需要通过 `js` 加载兼容的浏览器端绘图
-引擎和初始化脚本。不同 Mermaid 版本的初始化 API 有差异，因此离线解析器
-没有默认启用一个不锁定版本的 Mermaid 配置。
+类名。本地 `markdown` 解析器还会依次加载内置 Mermaid 11.16.1 与
+`js/mermaid_config.js`，所以 `mermaid` 围栏能在浏览器中离线绘图。`flow` 和
+`sequence` 仅保留兼容类名，需要各自的引擎，并不是 Mermaid 的别名。初始化
+脚本会先移除 PyMdown SuperFences 生成的 `<code>` 包装，再把纯图表文本交给
+Mermaid。可使用 `samples/mermaid.md` 检查流程图和时序图。
 
 ### Arithmatex
 
@@ -329,16 +320,23 @@ URI 引用，远程 URL 仍保持外链。这样可以避免大型 JavaScript bu
 ## 在线与外部解析器
 
 `github` 和 `gitlab` 解析器会把选区或文档文本发送到对应的 Markdown API。
-可选令牌只能写在用户配置文件中：
+GitLab 从 15.3 起要求 Markdown API 必须鉴权，因此空的
+`gitlab_personal_token` 会得到 HTTP 401。请创建权限最小化、带 `read_api`
+scope 的 GitLab Personal Access Token，并且只写入用户配置文件：
 
 ```json
 {
   "github_oauth_token": "",
-  "gitlab_personal_token": ""
+  "gitlab_personal_token": "glpat-your-token"
 }
 ```
 
-不要把真实令牌放入 `settings_default.json` 或共享的 Markdown 文档。
+插件会通过 `Private-Token` 请求头将其发送到
+`https://gitlab.com/api/v4/markdown`。配置了非空值仍返回 401，通常表示令牌
+无效、过期、已撤销或没有 `read_api` scope。不要把真实令牌放入
+`settings_default.json` 或共享的 Markdown 文档。内置 KaTeX/Mermaid 只负责
+增强 API 返回的 HTML，并不能替代 GitLab 鉴权或在本地完成 GitLab Markdown
+转换。
 
 外部解析器从标准输入读取 Markdown，并将 HTML 正文片段写到标准输出：
 
@@ -359,21 +357,30 @@ Shell。使用解析器专属语法时，仍需要设置对应的 Pandoc 输入�
 
 ## YAML Front Matter
 
-`strip_yaml_front_matter` 为 `true` 时，文档开头的 YAML 块可以设置 `title`、
-`author` 等 HTML 元数据，以及 `basepath`、`references`、`destination` 或嵌套
-的 `settings`：
+这里的 YAML 是直接写在 Markdown 文件最开头、由两行 `---` 包围的 Front
+Matter，并不是单独的配置文件。`strip_yaml_front_matter` 为 `true` 时，插件
+会读取并应用这个块，再把它从可见正文中移除；
+`false` (默认) 才表示禁用插件的这项处理。YAML 可以设置 `title`、`author` 等 HTML
+元数据，以及 `basepath`、`references`、`destination` 或嵌套的 `settings`：
 
 ```yaml
 ---
 title: 示例
 author: Ada
+basepath: C:/docs/project
+references:
+  - shared-definitions.md
+destination: output/example.html
 settings:
   theme: dark
 ---
 ```
 
-此功能默认关闭。文档级设置可以选择本地/远程资源和输出路径，因此处理不可信
-Markdown 时，应先审查 Front Matter 再启用。
+`basepath` 是相对路径的基准目录；`references` 会在转换前追加其他 Markdown
+源文件；`destination` 是“保存 HTML”的目标；`settings` 为当前文档覆盖渲染
+设置；其他键会成为 HTML 元数据。此功能默认关闭。文档级设置可以选择本地/
+远程资源和输出路径，因此处理不可信 Markdown 时，应先审查 Front Matter 再
+启用。
 
 ## 网络与安全说明
 
