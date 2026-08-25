@@ -100,7 +100,9 @@
   "js": {
     "markdown": [
       "js/mathjax4_config.js",
-      "js/tex-mml-chtml.js"
+      "js/tex-mml-chtml.js",
+      "js/mermaid.min.js",
+      "js/mermaid_config.js"
     ],
     "github": [],
     "gitlab": [

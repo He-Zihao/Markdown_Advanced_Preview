@@ -79,8 +79,13 @@ DEFAULT_MATHJAX_JS = [
     "js/tex-mml-chtml.js",
 ]
 
+DEFAULT_MARKDOWN_JS = DEFAULT_MATHJAX_JS + [
+    "js/mermaid.min.js",
+    "js/mermaid_config.js",
+]
+
 DEFAULT_JS = {
-    "markdown": DEFAULT_MATHJAX_JS,
+    "markdown": DEFAULT_MARKDOWN_JS,
     "github": [],
     "gitlab": [
         "js/katex.min.js",
@@ -506,15 +511,24 @@ class Renderer:
             url = "https://gitlab.com/api/v4/markdown"
             payload = {"text": text, "gfm": settings.get("gitlab_mode", "gfm") == "gfm"}
             token = settings.get("gitlab_personal_token", "")
+            if not token:
+                raise PreviewError(
+                    "GitLab Markdown API requires authentication. Set "
+                    "gitlab_personal_token in the user settings (read_api scope is sufficient)."
+                )
             headers = {"Content-Type": "application/json"}
-            if token:
-                headers["Private-Token"] = token
+            headers["Private-Token"] = token
         request = Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
         try:
             with urlopen(request, timeout=30) as response:
                 raw = response.read().decode("utf-8")
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")
+            if compiler == "gitlab" and exc.code == 401:
+                raise PreviewError(
+                    "GitLab rejected gitlab_personal_token (HTTP 401). Check that the token "
+                    "is active, unexpired, and has read_api scope."
+                ) from exc
             raise PreviewError("{} API returned HTTP {}: {}".format(compiler, exc.code, detail)) from exc
         except (URLError, OSError) as exc:
             raise PreviewError("Cannot connect to {} API: {}".format(compiler, exc)) from exc
