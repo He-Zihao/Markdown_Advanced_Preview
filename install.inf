@@ -4,6 +4,7 @@ desc=Full-featured Markdown preview and HTML export
 type=cudatext-plugin
 subdir=cuda_markdown_advanced_preview
 api=1.0.471
+homepage=https://github.com/He-Zihao/Markdown_Advanced_Preview
 
 [item1]
 section=commands
