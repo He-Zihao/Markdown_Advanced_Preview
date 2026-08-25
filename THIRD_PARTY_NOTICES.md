@@ -18,10 +18,9 @@ The project's MIT license does not replace their licenses.
 | GitHub Octicons link-icon font | Embedded in `css/github.css` | MIT; `vendor/LICENSE.Octicons.txt` |
 | MathJax 4.1.3 | `js/tex-mml-chtml.js` | Apache License 2.0; `vendor/LICENSE.MathJax.txt` |
 
-The default Markdown parser includes MathJax locally. The GitLab parser still
-references KaTeX and Mermaid from public CDNs, and emoji images may be loaded
-from GitHub. Those projects and service providers apply their own licenses and
-terms.
+The default Markdown and GitLab parser includes MathJax or KaTex locally. And
+emoji images may be loaded from GitHub. Those projects and service providers
+apply their own licenses and terms.
 
 When adding or upgrading a dependency or asset, preserve its upstream notices
 and update this file.
