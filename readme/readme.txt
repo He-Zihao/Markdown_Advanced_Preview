@@ -39,8 +39,17 @@ Configuration
 
 The Settings command opens cuda_markdown_advanced_preview.json in CudaText's
 settings directory. It is created from settings_default.json on first use. It
-must be strict JSON: comments and trailing commas are not accepted. Nested
+is recreated on startup if deleted. It must be strict JSON: comments and
+trailing commas are not accepted. Nested
 objects are merged with defaults; arrays replace the complete default array.
+
+Linux compatibility
+-------------------
+
+The plugin adapter repairs a CudaText embedded-Python state where html.parser
+is cached but is no longer attached to the html package. This fixes the
+PyMdown import error without modifying bundled third-party libraries and stays
+compatible with older zipimporter loaders. Restart CudaText after upgrading.
 
 Important settings:
 
@@ -75,9 +84,15 @@ supported. Set enable_mathjax to false to disable it. Rare dynamic font
 ranges, optional TeX packages, or accessibility data may still need extra
 MathJax files or network access when used.
 
-Local CSS and JavaScript files are embedded in generated HTML. Remote URLs are
-requested by the browser. Custom templates, JavaScript, and external parser
-commands are trusted configuration and may execute code or read local files.
+The GitLab parser bundles KaTeX 0.18.1 (CSS, JavaScript, and fonts) and Mermaid
+11.16.1. settings_default.json loads those local files before
+js/gitlab_config.js; the default GitLab assets do not use their former CDNs.
+
+Local CSS files are embedded in generated HTML. Local JavaScript files use
+absolute file:// script URLs so large bundles stay out of the HTML and MathJax
+4 can detect its resource root. Remote URLs are requested by the browser.
+Custom templates, JavaScript, and external parser commands are trusted
+configuration and may execute code or read local files.
 
 Online and external parsers
 ---------------------------
