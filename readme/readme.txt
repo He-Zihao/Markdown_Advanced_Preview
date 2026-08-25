@@ -87,6 +87,8 @@ MathJax files or network access when used.
 The GitLab parser bundles KaTeX 0.18.1 (CSS, JavaScript, and fonts) and Mermaid
 11.16.1. settings_default.json loads those local files before
 js/gitlab_config.js; the default GitLab assets do not use their former CDNs.
+The local markdown parser also loads Mermaid 11.16.1 and
+js/mermaid_config.js. See samples/mermaid.md for test diagrams.
 
 Local CSS files are embedded in generated HTML. Local JavaScript files use
 absolute file:// script URLs so large bundles stay out of the HTML and MathJax
@@ -98,8 +100,10 @@ Online and external parsers
 ---------------------------
 
 The github and gitlab parsers upload the Markdown being converted to the
-corresponding Markdown API. Optional github_oauth_token and
-gitlab_personal_token values must be kept only in the user's settings file.
+corresponding Markdown API. GitLab's Markdown API requires authentication:
+create a personal access token with read_api scope and set
+gitlab_personal_token only in the user's settings file. An empty, invalid,
+expired, or revoked token returns HTTP 401.
 
 External parsers are configured in markdown_binary_map. Each value is an array
 whose first item is the absolute executable path and whose remaining items are
