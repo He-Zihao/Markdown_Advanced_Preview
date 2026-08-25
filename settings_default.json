@@ -92,7 +92,7 @@
     "github": ["css/github.css"],
     "gitlab": [
       "css/gitlab.css",
-      "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css"
+      "css/katex.min.css"
     ]
   },
   "allow_css_overrides": true,
@@ -104,8 +104,8 @@
     ],
     "github": [],
     "gitlab": [
-      "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js",
-      "https://unpkg.com/mermaid@8.0.0-rc.8/dist/mermaid.min.js",
+      "js/katex.min.js",
+      "js/mermaid.min.js",
       "js/gitlab_config.js"
     ]
   },

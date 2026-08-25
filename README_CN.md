@@ -38,7 +38,19 @@ Addons Manager > Install from ZIP file**）安装发布包。如果菜单没有�
 
 选择 **Settings...** 可编辑 CudaText 配置目录中的
 `cuda_markdown_advanced_preview.json`。首次使用时，插件会根据
-`settings_default.json` 创建它。
+`settings_default.json` 创建它。如果用户配置被删除，插件会在下一次启动时
+根据内置默认值重新生成；打开 **Settings...** 或执行预览也会确保该文件存在。
+
+### Linux 与内嵌 Python 兼容性
+
+部分 Linux 版 CudaText 在导入 Python-Markdown 后，可能出现标准库
+`html.parser` 子模块仍在缓存中、但没有挂载到父包 `html` 的状态。随后
+PyMdown Extensions 会报错 `AttributeError: module 'html' has no attribute
+'parser'`。现在由插件适配层在导入 Python-Markdown 后修复父子模块绑定；内置
+Python-Markdown、PyMdown Extensions、Pygments 及其他第三方源码均保持不变。
+该做法也兼容仅提供 `load_module()`、没有 `exec_module()` 的旧 CudaText
+`zipimporter`。升级后请重启 CudaText，以清除内嵌 Python 解释器中的旧模块
+缓存。
 
 这里使用严格 JSON：
 
@@ -275,8 +287,14 @@ CDN 下载。MathJax 4.x npm 包的官方文件名是 `tex-mml-chtml.js`；发�
 
 离线 `markdown` 解析器没有 `enable_katex` 设置。可以通过自定义 `css` 和
 `js` 数组使用 KaTeX，但必须同时配置样式表、引擎，以及能够处理 Arithmatex
-输出的初始化脚本。GitLab 解析器另有用于 GitLab API 输出的内置 KaTeX 与
-Mermaid 资源。
+输出的初始化脚本。GitLab 解析器依次使用以下本地资源处理 GitLab API 输出：
+
+1. KaTeX 0.18.1：`css/katex.min.css` 与 `js/katex.min.js`；
+2. Mermaid 11.16.1：`js/mermaid.min.js`；
+3. 在两个引擎之后加载的集成脚本 `js/gitlab_config.js`。
+
+它们也是 `settings_default.json` 中明确列出的 `gitlab` 配置；默认 GitLab
+资源不再需要从 KaTeX 或 Mermaid CDN 下载。
 
 将 `enable_mathjax` 设为 `false` 可移除默认的 Arithmatex 自动启用行为和
 MathJax 资源；用户在 `js` 中明确加入的自定义资源仍由用户自行管理。
@@ -298,7 +316,10 @@ MathJax 资源；用户在 `js` 中明确加入的自定义资源仍由用户自
 }
 ```
 
-本地 CSS 和 JavaScript 会嵌入生成的 HTML；远程 URL 保持外链，由浏览器请求。
+本地 CSS 会嵌入生成的 HTML；本地 JavaScript 则通过跨平台的绝对 `file://`
+URI 引用，远程 URL 仍保持外链。这样可以避免大型 JavaScript bundle 作为内联
+代码充斥 HTML，也使 MathJax 4 能通过 `document.currentScript.src` 正确确定资源
+根目录。生成的文档因此需要配置中的本地 JavaScript 文件继续保留在原路径。
 `allow_css_overrides` 为 `true` 时，还会追加源文件旁边的同名 CSS，例如
 `notes.md` 对应 `notes.css`。
 

@@ -10,7 +10,7 @@ import base64
 import copy
 import hashlib
 import html
-import html.parser  # pymdown-extensions 8.1 expects html.parser on the package
+from html import parser as _html_parser
 import importlib
 import json
 import mimetypes
@@ -34,6 +34,22 @@ VENDOR_DIR = PLUGIN_DIR / "vendor"
 import pygments  # noqa: E402
 import markdown  # noqa: E402
 
+
+def _ensure_html_parser_binding() -> None:
+    global _html_parser
+    _html_parser = sys.modules.get("html.parser", _html_parser)
+    sys.modules["html.parser"] = _html_parser
+    html.parser = _html_parser
+
+
+# Python-Markdown loads and monkey-patches html.parser during its own import.
+# Some CudaText Linux/Python combinations leave the cached child module
+# detached from the parent ``html`` package.  PyMdown later accesses
+# ``html.parser.HTMLParser`` and fails even though ``html.parser`` remains in
+# sys.modules.  Repair that parent/child binding in this adapter rather than
+# changing either bundled third-party package.
+_ensure_html_parser_binding()
+
 if str(VENDOR_DIR) not in sys.path:
     sys.path.insert(0, str(VENDOR_DIR))
 
@@ -54,7 +70,7 @@ DEFAULT_CSS = {
     "github": ["css/github.css"],
     "gitlab": [
         "css/gitlab.css",
-        "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css",
+        "css/katex.min.css",
     ],
 }
 
@@ -67,8 +83,8 @@ DEFAULT_JS = {
     "markdown": DEFAULT_MATHJAX_JS,
     "github": [],
     "gitlab": [
-        "https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js",
-        "https://unpkg.com/mermaid@8.0.0-rc.8/dist/mermaid.min.js",
+        "js/katex.min.js",
+        "js/mermaid.min.js",
         "js/gitlab_config.js",
     ],
 }
@@ -253,8 +269,16 @@ def _asset_tags(items: Any, kind: str) -> str:
         if not path.is_absolute():
             path = PLUGIN_DIR / path
         if path.is_file():
-            content = _read_utf8(str(path))
-            result.append("<style>{}</style>".format(content) if kind == "css" else "<script>{}</script>".format(content))
+            if kind == "css":
+                result.append("<style>{}</style>".format(_read_utf8(str(path))))
+            else:
+                # Keep local JavaScript external. Apart from preventing large
+                # bundles such as MathJax from being dumped into the generated
+                # document, this preserves document.currentScript.src. MathJax
+                # 4 uses that URL to determine its component/resource root.
+                result.append('<script src="{}"></script>'.format(
+                    html.escape(path.resolve().as_uri(), quote=True)
+                ))
     return "\n".join(result)
 
 

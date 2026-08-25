@@ -82,6 +82,14 @@ def _write_utf8(path: Path, content: str) -> None:
     os.replace(str(temporary), str(path))
 
 
+def _ensure_settings_file() -> None:
+    """Create the user settings copy on first startup or after deletion."""
+    if SETTINGS_FILE.is_file():
+        return
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(str(DEFAULT_SETTINGS_FILE), str(SETTINGS_FILE))
+
+
 def _write_live_marker(render_settings: Any) -> None:
     marker = getattr(render_settings, "live_reload_marker", None)
     token = getattr(render_settings, "live_reload_token", None)
@@ -118,9 +126,16 @@ class Command:
     def __init__(self) -> None:
         self._sessions: Dict[str, Dict[str, Any]] = {}
         DEFAULT_TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            _ensure_settings_file()
+        except OSError:
+            # Keep the plugin loadable with packaged in-memory defaults.  A
+            # command that needs settings will report the filesystem error.
+            traceback.print_exc()
 
     def _settings(self) -> Dict[str, Any]:
-        return load_settings(str(SETTINGS_FILE) if SETTINGS_FILE.is_file() else None)
+        _ensure_settings_file()
+        return load_settings(str(SETTINGS_FILE))
 
     def _pick_parser(self, settings: Dict[str, Any]) -> Optional[str]:
         available = ["markdown", "github", "gitlab"]
@@ -255,9 +270,7 @@ class Command:
 
     def config(self) -> None:
         try:
-            if not SETTINGS_FILE.exists():
-                SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(str(DEFAULT_SETTINGS_FILE), str(SETTINGS_FILE))
+            _ensure_settings_file()
             file_open(str(SETTINGS_FILE))
         except OSError as exc:
             _error("Cannot open settings: {}".format(exc))
