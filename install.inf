@@ -53,4 +53,9 @@ method=config_live
 
 [item10]
 section=events
-events=on_change_slow,on_save,on_close,on_exit
+events=on_change_slow,on_save,on_close
+lexers=Markdown
+
+[item11]
+section=events
+events=on_exit
